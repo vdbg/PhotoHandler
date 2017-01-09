@@ -158,19 +158,19 @@ namespace PhotoHandler
         /// </summary>
         private static readonly string Css = @"
 body, td {
-	font-family: Verdana, Arial, Helvetica;
-	font-size: xx-small;
-	color: Gray;
-	background-color: " + FormatColor(BackGround) + @";
+    font-family: Verdana, Arial, Helvetica;
+    font-size: xx-small;
+    color: Gray;
+    background-color: " + FormatColor(BackGround) + @";
 }
 
 a {
-	color: White;
+    color: White;
     text-decoration: none;
 }
 
 img {
-	border: none;
+    border: none;
 }
 
 img.blank {
@@ -202,13 +202,13 @@ img.blank {
 }
 
 .albumMetaSectionHead {
-	background-color: Gray;
-	color: White;
-	font-weight: bold;
+    background-color: Gray;
+    color: White;
+    font-weight: bold;
 }
 
 .albumMetaName {
-	font-weight: bold;
+    font-weight: bold;
 }
 
 .albumMetaValue {
@@ -5770,9 +5770,9 @@ namespace Com.Drew.Metadata.Exif
         /// <summary>
         /// Process one of the nested Tiff IFD directories.
         /// 2 bytes: number of tags for each tag
-        ///		2 bytes: tag type
-        ///		2 bytes: format code
-        /// 	4 bytes: component count
+        ///     2 bytes: tag type
+        ///     2 bytes: format code
+        ///     4 bytes: component count
         /// </summary>
         /// <param name="directory">the directory</param>
         /// <param name="dirStartOffSet">where to start</param>
