@@ -154,6 +154,11 @@ namespace PhotoHandler
         private const int MemoryCacheSlidingDuration = 10;
 
         /// <summary>
+        /// Default location for cache dir; if not specified, defaults to a subdirectory of web app
+        /// </summary>
+        public static string ImageCacheDir = null;
+
+        /// <summary>
         /// The default CSS that's requested by the header.
         /// </summary>
         private static readonly string Css = @"
@@ -215,7 +220,6 @@ img.blank {
 }
 ";
 
-        private static string _imageCacheDir;
         private static string _appPath;
 
         private static readonly byte[] _blankGif =
@@ -229,13 +233,12 @@ img.blank {
 #pragma warning disable 162
             if (Caching == CacheLocation.Disk)
             {
-                _imageCacheDir = Path.Combine(HttpRuntime.AppDomainAppPath, @"_AlbumCache");
-                Directory.CreateDirectory(_imageCacheDir);
-                _appPath = HttpRuntime.AppDomainAppPath;
-                if (_appPath[_appPath.Length - 1] == '\\')
+                if (string.IsNullOrWhiteSpace(ImageCacheDir))
                 {
-                    _appPath = _appPath.Substring(0, _appPath.Length - 1);
+                    ImageCacheDir = Path.Combine(HttpRuntime.AppDomainAppPath, @"_AlbumCache");
                 }
+                Directory.CreateDirectory(ImageCacheDir);
+                _appPath = HttpRuntime.AppDomainAppPath.TrimEnd('\\');
             }
 #pragma warning restore 162
         }
