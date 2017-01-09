@@ -154,9 +154,19 @@ namespace PhotoHandler
         private const int MemoryCacheSlidingDuration = 10;
 
         /// <summary>
+        /// The duration in minutes of the client sliding expiration.
+        /// </summary>
+        private const int ClientCacheSlidingDuration = 10;
+
+        /// <summary>
         /// Default location for cache dir; if not specified, defaults to a subdirectory of web app
         /// </summary>
         public static string ImageCacheDir = null;
+
+        /// <summary>
+        /// If true, invalidate cache everytime the code changes. Useful when doing dev work
+        /// </summary>
+        public static bool InvalidateCacheOnCodeChanges = false;
 
         /// <summary>
         /// The default CSS that's requested by the header.
@@ -271,32 +281,34 @@ img.blank {
                 // Need to scan all contents
                 foreach (string entry in Directory.GetDirectories(path))
                 {
-                    DateTime entryLastModified = Directory.GetLastWriteTime(entry);
-                    if (entryLastModified > lastModified)
-                    {
-                        lastModified = entryLastModified;
-                    }
+                    lastModified = MaxTime(lastModified, Directory.GetLastWriteTime(entry));
                 }
                 foreach (string entry in Directory.GetFiles(path))
                 {
-                    DateTime entryLastModified = File.GetLastWriteTime(entry);
-                    if (entryLastModified > lastModified)
-                    {
-                        lastModified = entryLastModified;
-                    }
+                    lastModified = MaxTime(lastModified, File.GetLastWriteTime(entry));
                 }
             }
             else
             {
                 lastModified = File.GetLastWriteTime(path);
             }
+            var srcCode = Path.Combine(HttpRuntime.AppDomainAppPath, "album.ashx");
+            if (InvalidateCacheOnCodeChanges && File.Exists(srcCode))
+            {
+                lastModified = MaxTime(lastModified, File.GetLastWriteTime(srcCode));
+            }
             string cacheKey = Path.Combine(path, ".png")
                 .Substring(_appPath.Length)
                 .Replace('\\', '_')
                 .Replace(':', '_');
-            cachedPath = Path.Combine(_imageCacheDir, cacheKey);
+            cachedPath = Path.Combine(ImageCacheDir, cacheKey);
 
             return File.Exists(cachedPath) && File.GetLastWriteTime(cachedPath) >= lastModified;
+        }
+
+        public static DateTime MaxTime(DateTime d1, DateTime d2)
+        {
+            return d1 < d2 ? d2 : d1;
         }
 
         /// <summary>
@@ -325,7 +337,7 @@ img.blank {
             HttpCachePolicy cache = response.Cache;
             DateTime now = DateTime.Now;
             cache.SetCacheability(HttpCacheability.Public);
-            cache.SetExpires(now + TimeSpan.FromDays(3650.0));
+            cache.SetExpires(now + TimeSpan.FromMinutes(ClientCacheSlidingDuration));
             cache.SetLastModified(now);
         }
 
@@ -351,7 +363,7 @@ img.blank {
             int size,
             HttpResponse response)
         {
-
+            ClientCache(response);
             string buildPath = null;
 
 #pragma warning disable 162
@@ -408,13 +420,14 @@ img.blank {
         }
 
         /// <summary>
-        /// Outputs a resized image to the HttpResponse object
+        /// Generate a sprite strip response
         /// </summary>
-        /// <param name="imageFile">The image file to serve.</param>
+        /// <param name="dir">The directory</param>
         /// <param name="size">The size in pixels of a bounding square around the reduced image.</param>
         /// <param name="response">The HttpResponse to output to.</param>
         public static void GenerateSpriteStripResponse(string dir, int size, HttpResponse response)
         {
+            ClientCache(response);
             string buildPath = null;
 
             if (File.Exists(dir))
