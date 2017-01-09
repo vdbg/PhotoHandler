@@ -2491,8 +2491,7 @@ function photoAlbumCallback(result, context) {
                 }
 
                 int i = 1;
-                string spriteUrl = "?albummode=thumbnail&albumpath=" +
-                    ImageHelper.UrlEncode(dirPath);
+                string spriteUrl = "album.ashx?albummode=thumbnail&albumpath=" + ImageHelper.UrlEncode(dirPath);
 
                 List<AlbumFolderInfo> folders = SubFolders;
                 if (folders != null && folders.Count > 0)
@@ -2542,10 +2541,12 @@ function photoAlbumCallback(result, context) {
             writer.AddAttribute(HtmlTextWriterAttribute.Href, link, true);
             writer.RenderBeginTag(HtmlTextWriterTag.A);
             writer.AddAttribute(HtmlTextWriterAttribute.Class, "blank");
-            writer.AddAttribute(HtmlTextWriterAttribute.Src, "?albummode=blank", true);
+            writer.AddAttribute(HtmlTextWriterAttribute.Src, "album.ashx?albummode=blank", true);
             writer.AddAttribute(HtmlTextWriterAttribute.Alt, tooltip, true);
+            writer.AddAttribute(HtmlTextWriterAttribute.Height, ImageHelper.ThumbnailSize.ToString());
+            writer.AddAttribute(HtmlTextWriterAttribute.Width, ImageHelper.ThumbnailSize.ToString());
             writer.AddStyleAttribute("background",
-                String.Format("url({0}) no-repeat -{1}px 0px", url, spriteIndex * (ImageHelper.ThumbnailSize + 1)));
+                string.Format("url('{0}') no-repeat -{1}px {2}px", url, spriteIndex * (ImageHelper.ThumbnailSize + 1), 0));
             writer.RenderBeginTag(HtmlTextWriterTag.Img);
             writer.RenderEndTag(); // img
             writer.WriteBreak();
