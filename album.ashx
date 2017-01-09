@@ -11948,7 +11948,7 @@ namespace Com.Drew.Imaging.Jpg
                 try
                 {
                     // Added read only access for ASPX use, thanks for Ryan Patridge
-                    inputStream = file.Open(FileMode.Open, FileAccess.Read);
+                    inputStream = file.Open(FileMode.Open, FileAccess.Read, FileShare.Read);
                 }
                 catch (FileNotFoundException e)
                 {
