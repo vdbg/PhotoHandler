@@ -164,6 +164,12 @@ namespace PhotoHandler
         public static string ImageCacheDir = null;
 
         /// <summary>
+        /// Root of pictures; if not specified, defaults to this file's directory.
+        /// For development purposes only; trying to access the full-size picture will yield a 404.
+        /// </summary>
+        public static string PicturesDir = null;
+
+        /// <summary>
         /// If true, invalidate cache everytime the code changes. Useful when doing dev work
         /// </summary>
         public static bool InvalidateCacheOnCodeChanges = false;
@@ -230,8 +236,6 @@ img.blank {
 }
 ";
 
-        private static string _appPath;
-
         private static readonly byte[] _blankGif =
             Convert.FromBase64String("R0lGODlhAQABAID/AMDAwAAAACH5BAEAAAAALAAAAAABAAEAAAEBMgA7");
 
@@ -248,7 +252,6 @@ img.blank {
                     ImageCacheDir = Path.Combine(HttpRuntime.AppDomainAppPath, @"_AlbumCache");
                 }
                 Directory.CreateDirectory(ImageCacheDir);
-                _appPath = HttpRuntime.AppDomainAppPath.TrimEnd('\\');
             }
 #pragma warning restore 162
         }
@@ -298,7 +301,7 @@ img.blank {
                 lastModified = MaxTime(lastModified, File.GetLastWriteTime(srcCode));
             }
             string cacheKey = Path.Combine(path, ".png")
-                .Substring(_appPath.Length)
+                .Substring(ImageHelper.PicturesDir.Length)
                 .Replace('\\', '_')
                 .Replace(':', '_');
             cachedPath = Path.Combine(ImageCacheDir, cacheKey);
@@ -2054,6 +2057,14 @@ function photoAlbumCallback(result, context) {
                 ViewState["Path"] = path;
 
                 _physicalPath = _request.MapPath(path, "/", false);
+                if (!string.IsNullOrWhiteSpace(ImageHelper.PicturesDir))
+                {
+                    _physicalPath = _physicalPath.Replace(HttpRuntime.AppDomainAppPath.TrimEnd('\\'), ImageHelper.PicturesDir);
+                }
+                else
+                {
+                    ImageHelper.PicturesDir = HttpRuntime.AppDomainAppPath.TrimEnd('\\');
+                }
             }
         }
 
@@ -2445,12 +2456,6 @@ function photoAlbumCallback(result, context) {
             // There's a small concurrency issue here which is that the index of a thumbnail
             // may change between the time the page is rendered and the time the thumbnails strip
             // is rendered.
-            string dirPrefix = dirPath;
-            if (!dirPrefix.EndsWith("/"))
-            {
-                dirPrefix += "/";
-            }
-
             if (_isControl)
             {
                 if (!Page.IsCallback)
