@@ -385,7 +385,7 @@ img.blank {
             }
 #pragma warning restore 162
 
-            using (Bitmap originalImage = (Bitmap)Bitmap.FromFile(imageFile, false))
+            using (Bitmap originalImage = GetRotatedBitmap(imageFile))
             {
                 int originalWidth = originalImage.Width;
                 int originalHeight = originalImage.Height;
@@ -487,7 +487,7 @@ img.blank {
                     }
                     foreach (FileInfo file in files)
                     {
-                        using (Bitmap originalImage = (Bitmap)Bitmap.FromFile(file.FullName, false))
+                        using (Bitmap originalImage = GetRotatedBitmap(file.FullName))
                         {
                             CreateNewImage(originalImage, size, true, g, i++);
                         }
@@ -648,7 +648,7 @@ img.blank {
 
             foreach (string folderImagePath in imagesToDraw)
             {
-                Bitmap folderImage = new Bitmap(folderImagePath);
+                Bitmap folderImage = GetRotatedBitmap(folderImagePath);
 
                 int width = folderImage.Width;
                 int height = folderImage.Height;
@@ -1024,6 +1024,52 @@ img.blank {
 
             encoderParams.Dispose();
             return ms.ToArray();
+        }
+
+        static Bitmap GetRotatedBitmap(string fileName)
+        {
+            var ret = (Bitmap)Bitmap.FromFile(fileName, false);
+            var orientation = GetOrientation(new FileInfo(fileName));
+            switch (orientation)
+            {
+                case 0: // unknown; do nothing
+                    break;
+                case 1: // OK!
+                    break;
+                case 3:
+                    ret.RotateFlip(RotateFlipType.Rotate180FlipNone);
+                    break;
+                case 6:
+                    ret.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                    break;
+                case 8:
+                    ret.RotateFlip(RotateFlipType.Rotate270FlipNone);
+                    break;
+            }
+            return ret;
+        }
+
+        public static int GetOrientation(FileInfo fileName)
+        {
+            try
+            {
+                var data = GetImageData(fileName);
+                if (data == null)
+                {
+                    return 0;
+                }
+                var dir = data.GetDirectory(typeof(ExifDirectory));
+                if (dir == null)
+                {
+                    return 0;
+                }
+
+                return dir.GetInt(ExifDirectory.TAG_ORIENTATION);
+            }
+            catch
+            {
+                return 0;
+            }
         }
     }
 
