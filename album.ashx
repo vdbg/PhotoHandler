@@ -88,6 +88,12 @@ namespace PhotoHandler
         public const int PreviewSize = 700;
 
         /// <summary>
+        /// Maximum size of the thumbnail caption in chars.
+        /// 0 to disable caption.        
+        /// </summary>
+        public static int ThumbnailCaptionMaxChars = 10;
+
+        /// <summary>
         /// The background color of the image thumbnails and previews.
         /// </summary>
         private static readonly Color BackGround = Color.Black;
@@ -1351,9 +1357,9 @@ img.blank {
     /// </summary>
     public sealed class ImageInfo : AlbumPageInfo
     {
-        private string _physicalPath;
+        private readonly string _physicalPath;
         private string _name;
-        private int _index;
+        private readonly int _index;
 
         /// <summary>
         /// Constructs an ImageInfo.
@@ -2354,7 +2360,7 @@ function photoAlbumCallback(result, context) {
         }
 
         /// <summary>
-        /// Directs to the right rendering methos according to the mode.
+        /// Directs to the right rendering methods according to the mode.
         /// </summary>
         /// <param name="writer">The writer to write to.</param>
         private void RenderPrivate(HtmlTextWriter writer)
@@ -2380,15 +2386,6 @@ function photoAlbumCallback(result, context) {
                     throw new HttpException(404, "Directory Not Found");
                 }
             }
-            if ((_mode == AlbumHandlerMode.Folder) ||
-                (_mode == AlbumHandlerMode.Thumbnail))
-            {
-
-                if (!Directory.Exists(_physicalPath))
-                {
-                    throw new HttpException(404, "Directory Not Found");
-                }
-            }
             else if ((_mode != AlbumHandlerMode.Css) &&
                 (_mode != AlbumHandlerMode.Blank) &&
                 !File.Exists(_physicalPath))
@@ -2400,7 +2397,7 @@ function photoAlbumCallback(result, context) {
             switch (_mode)
             {
                 case AlbumHandlerMode.Folder:
-                    GenerateFolderPage(writer, Path, _physicalPath);
+                    GenerateFolderPage(writer, Path);
                     break;
 
                 case AlbumHandlerMode.Page:
@@ -2450,8 +2447,7 @@ function photoAlbumCallback(result, context) {
         /// </summary>
         /// <param name="writer">The writer to write to.</param>
         /// <param name="dirPath">The virtual path to the folder.</param>
-        /// <param name="dirPhysicalPath">The physical for the folder.</param>
-        private void GenerateFolderPage(HtmlTextWriter writer, string dirPath, string dirPhysicalPath)
+        private void GenerateFolderPage(HtmlTextWriter writer, string dirPath)
         {
             // There's a small concurrency issue here which is that the index of a thumbnail
             // may change between the time the page is rendered and the time the thumbnails strip
@@ -2525,7 +2521,7 @@ function photoAlbumCallback(result, context) {
                 {
                     foreach (ImageInfo image in images)
                     {
-                        RenderImageCell(writer, spriteUrl, i++, image.Link, DisplayImageTooltip, "&nbsp;");
+                        RenderImageCell(writer, spriteUrl, i++, image.Link, String.Format(DisplayImageTooltip, image.Caption), image.Caption);
                     }
                 }
             }
@@ -2570,10 +2566,27 @@ function photoAlbumCallback(result, context) {
             writer.WriteBreak();
             writer.AddAttribute(HtmlTextWriterAttribute.Class, "albumLegend");
             writer.RenderBeginTag(HtmlTextWriterTag.Span);
-            writer.Write(legend);
+            writer.Write(TransformLegend(legend));
             writer.RenderEndTag(); // span
             writer.RenderEndTag(); // a
             writer.RenderEndTag(); // div
+        }
+
+        public string TransformLegend(string legend)
+        {
+            if (ImageHelper.ThumbnailCaptionMaxChars <= 0 || string.IsNullOrEmpty(legend))
+            {
+                return string.Empty;
+            }
+            if (legend.Length <= ImageHelper.ThumbnailCaptionMaxChars)
+            {
+                return legend;
+            }
+            if (ImageHelper.ThumbnailCaptionMaxChars <= 3)
+            {
+                return legend.Substring(0, ImageHelper.ThumbnailCaptionMaxChars);
+            }
+            return legend.Substring(0, ImageHelper.ThumbnailCaptionMaxChars - 3) + "...";
         }
 
         /// <summary>
@@ -2672,7 +2685,7 @@ function photoAlbumCallback(result, context) {
                 // Previous image
                 if (PreviousImage != null)
                 {
-                    RenderImageCell(writer, PreviousImage.IconUrl, PreviousImage.Index, PreviousImage.Link, PreviousImageTooltip, "");
+                    RenderImageCell(writer, PreviousImage.IconUrl, PreviousImage.Index, PreviousImage.Link, PreviousImageTooltip, PreviousImage.Caption);
                 }
                 else
                 {
@@ -2693,7 +2706,7 @@ function photoAlbumCallback(result, context) {
                 // Next image
                 if (NextImage != null)
                 {
-                    RenderImageCell(writer, NextImage.IconUrl, NextImage.Index, NextImage.Link, NextImageTooltip, "");
+                    RenderImageCell(writer, NextImage.IconUrl, NextImage.Index, NextImage.Link, NextImageTooltip, NextImage.Caption);
                 }
                 else
                 {
